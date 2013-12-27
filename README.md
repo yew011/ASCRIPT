@@ -10,6 +10,7 @@ Alex's ovs helper SCRIPT.
 ascript [OPTIONS] [DIRECTORY] [EXTRA CONFIG...]
 
 OPTIONS:
+
     all:        rebuild everything and start ovs.
     boot:       boot.sh.
     conf:       configure.
@@ -25,11 +26,13 @@ OPTIONS:
     kill:       stop ovs.
 
 EXTRA CONFIGS:
+
     C=1:        use sparse.
     clang:      use clang.
     debug:      start ovs in debug mode.
 
 EXAMPLES:
+
     ascript log
     ascript conf make $PWD clang
     ascript kernel $PWD C=1
