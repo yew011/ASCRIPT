@@ -18,11 +18,9 @@ OPTIONS:
     elog:       emacs ovs-vswitchd.log
     vlog:       vi ovs-vswitchd.log
     check:      make check -j8.
-
     rmmod:      rmmod k-module.
     clean:      git clean -fx.
     mclean:     make clean.
-
     run:        run ovs.
     kill:       stop ovs.
 
