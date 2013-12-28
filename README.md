@@ -7,7 +7,11 @@ The design referrs to Ethan's ovs-dev.py script.
 
 Alex's ovs helper SCRIPT.
 
-ascript [OPTIONS] [DIRECTORY] [EXTRA CONFIG...]
+ascript [DIRECTORY] [OPTIONS] [EXTRA CONFIG...]
+
+DIRECTORY:
+
+    the path to ovs directory.
 
 OPTIONS:
 
@@ -19,9 +23,11 @@ OPTIONS:
     elog:       emacs ovs-vswitchd.log
     vlog:       vi ovs-vswitchd.log
     check:      make check -j8.
+
     rmmod:      rmmod k-module.
     clean:      git clean -fx.
     mclean:     make clean.
+
     run:        run ovs.
     kill:       stop ovs.
 
@@ -34,8 +40,12 @@ EXTRA CONFIGS:
 EXAMPLES:
 
     ascript log
-    ascript conf make $PWD clang
-    ascript kernel $PWD C=1
-    ascript start $PWD debug
+    ascript /root/ASCRIPT conf make /root/ASCRIPT clang
+    ascript /root/ASCRIPT kernel C=1
+    ascript /root/ASCRIPT start debug
+
+NOTE:
+
+    'all' and 'elog'/'vlog' will override other options.
 
 Version 1.0
