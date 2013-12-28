@@ -208,7 +208,7 @@ cmd_make () {
     if [ $CLEAN ]
     then
         CMD="$CMD git clean -fx ;"
-v    fi
+    fi
 
     if [ $MCLEAN ]
     then
