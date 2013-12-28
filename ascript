@@ -27,7 +27,7 @@ CHECK=
 RMMOD=
 CLEAN=
 MCLEAN=
-RUN=
+START=
 KILL=
 
 # log function.
@@ -60,7 +60,7 @@ OPTIONS:
     clean:      git clean -fx.
     mclean:     make clean.
 
-    run:        run ovs.
+    start:        run ovs.
     kill:       stop ovs.
 
 EXTRA CONFIGS:
@@ -136,8 +136,8 @@ cmd_parse () {
             "mclean")
                 MCLEAN="clean"
             ;;
-            "run")
-                RUN="run"
+            "start")
+                START="start"
             ;;
             "kill")
                 KILL="kill"
@@ -162,17 +162,16 @@ cmd_parse () {
 
 # compose the command to execute.
 cmd_make () {
-    # execute all-in-one command.
     if [ $ALL ]
     then
         msg "[INFO] all-in-one command, make compile run ovs."
-        CMD="killall ovs-vswitchd ; killall ovsdb-server" \
-            "make clean ; make distclean ; rmmod openvswitch ; rmmod gre" \
-            "./boot.sh ; ./congfigure $CONF_FLAG $CLANG" \
-            "--with-linux=/lib/modules/`uname -r`/build ;" \
-            "make -s -j8 $SPARSE 1 > /dev/null ; make install ;" \
-            "make modules_install ; /sbin/modprobe openvswitchd ;" \
-            "ovs_run $OVS $DEBUG ;"
+        CMD="killall ovs-vswitchd ; killall ovsdb-server ;
+            make clean ; make distclean ; rmmod openvswitch ; rmmod gre ;
+            ./boot.sh ; ./configure $CONF_FLAG $CLANG
+            --with-linux=/lib/modules/`uname -r`/build ;
+            make -s -j8 $SPARSE 1>/dev/null ; make install ;
+            make modules_install ; /sbin/modprobe openvswitchd ;
+            ovs_run $OVS $DEBUG ;"
         return
     fi
 
@@ -192,12 +191,12 @@ cmd_make () {
     if [ $KERNEL ]
     then
         msg "[INFO] make and install kernel module."
-        CMD="killall ovs-vswitchd ; killall ovsdb-server" \
-            "rmmod openvswitch ; rmmod gre" \
-            "./boot.sh ; ./congfigure $CONF_FLAG $CLANG" \
-            "--with-linux=/lib/modules/`uname -r`/build ;" \
-            "make -s -j8 $SPARSE 1 > /dev/null ; make install ;" \
-            "make modules_install ; /sbin/modprobe openvswitchd ;"
+        CMD="killall ovs-vswitchd ; killall ovsdb-server ;
+            rmmod openvswitch ; rmmod gre ;
+            ./boot.sh ; ./configure $CONF_FLAG $CLANG
+            --with-linux=/lib/modules/`uname -r`/build ;
+            make -s -j8 $SPARSE 1>/dev/null ; make install ;
+            make modules_install ; /sbin/modprobe openvswitchd ;"
     fi
 
     if [ $RMMOD ] && [ ! $KERNEL ]
@@ -232,10 +231,10 @@ cmd_make () {
 
     if [ $MAKE ]
     then
-        CMD="$CMD make -s -j 8 $SPARSE 1 > /dev/null ; make install ;"
+        CMD="$CMD make -s -j8 $SPARSE 1>/dev/null ; make install ;"
     fi
 
-    if [ $RUN ]
+    if [ $START ]
     then
         CMD="$CMD ovs_run $OVS $DEBUG ;"
     fi
@@ -248,7 +247,7 @@ cmd_make () {
 
 # run the command.
 cmd_run () {
-    $CMD
+    eval $CMD
     find . -name "*.[cChH]" -print | etags -
 }
 
