@@ -313,6 +313,8 @@ if [ $DIR ]
 then
     CONF_FLAG="--prefix=$DIR, --localstatedir=$DIR, --with-logdir=$DIR/log," \
               "--with-rundir=$DIR/run --with-dbdir=$DIR"
+else
+    DIR="/usr/local"
 fi
 
 # complete command.
