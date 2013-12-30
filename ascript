@@ -60,7 +60,7 @@ OPTIONS:
     clean:      git clean -fx.
     mclean:     make clean.
 
-    start:        run ovs.
+    start:      run ovs.
     kill:       stop ovs.
 
 EXTRA CONFIGS:
@@ -70,7 +70,7 @@ EXTRA CONFIGS:
 
 EXAMPLES:
     ascript log
-    ascript $PWD conf make $PWD clang
+    ascript $PWD conf make clang
     ascript $PWD kernel C=1
     ascript $PWD start debug
 
