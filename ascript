@@ -170,7 +170,7 @@ cmd_make () {
             ./boot.sh ; ./configure $CONF_FLAG $CLANG
             --with-linux=/lib/modules/`uname -r`/build ;
             make -s -j8 $SPARSE 1>/dev/null ; make install ;
-            make modules_install ; /sbin/modprobe openvswitchd ;
+            make modules_install ; /sbin/modprobe openvswitch ;
             ovs_run $OVS $DEBUG ;"
         return
     fi
@@ -196,7 +196,7 @@ cmd_make () {
             ./boot.sh ; ./configure $CONF_FLAG $CLANG
             --with-linux=/lib/modules/`uname -r`/build ;
             make -s -j8 $SPARSE 1>/dev/null ; make install ;
-            make modules_install ; /sbin/modprobe openvswitchd ;"
+            make modules_install ; /sbin/modprobe openvswitch ;"
     fi
 
     if [ $RMMOD ] && [ ! $KERNEL ]
