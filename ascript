@@ -41,6 +41,20 @@ helper () {
 """
 Alex's ovs helper SCRIPT.
 
+
+ascript [elog | vlog | kill | rmlog] [-d=DIR]
+
+OPTIONS:
+    elog:       emacs ovs-vswitchd.log
+    vlog:       vi ovs-vswitchd.log
+    rmlog:      rm ovs-vswitchd.log
+
+    kill:       stop ovs.
+
+[-d=DIR]
+    -d=DIR:     specify where to put db, log, pid files.
+
+
 ascript [DIRECTORY] [OPTIONS] [EXTRA CONFIG...]
 
 DIRECTORY:
@@ -52,8 +66,6 @@ OPTIONS:
     conf:       configure.
     kernel:     install kernel module.
     make:       make and make install.
-    elog:       emacs ovs-vswitchd.log
-    vlog:       vi ovs-vswitchd.log
     check:      make check -j8.
 
     rmmod:      rmmod k-module.
@@ -61,9 +73,9 @@ OPTIONS:
     mclean:     make clean.
 
     start:      run ovs.
-    kill:       stop ovs.
 
 EXTRA CONFIGS:
+    -d=DIR:     specify where to put db, log, pid files.
     C=1:        use sparse.
     clang:      use clang.
     debug:      start ovs in debug mode.
@@ -75,7 +87,7 @@ EXAMPLES:
     ascript $PWD start debug
 
 NOTE:
-    'all' and 'elog'/'vlog' will override other options.
+    'all' will override other options.
 
 Version 1.0
 """
@@ -90,6 +102,26 @@ cmd_parse () {
         exit 0
     fi
 
+    # for the first command format.
+    case "$@" in
+        *kill*)
+            KILL="kill"
+            return
+        ;;
+        *elog*)
+            LOG="emacs"
+            return
+        ;;
+        *vlog*)
+            LOG="vi"
+            return
+        ;;
+        *rmlog*)
+            LOG="rmlog"
+            return
+        ;;
+    esac
+
     # check the ovs directory.
     if [ ! -d "$1" ]
     then
@@ -98,10 +130,13 @@ cmd_parse () {
     fi
     OVS=$1
 
+    # for the second command format.
     for option in $@
     do
         case "$option" in
             "$OVS")
+            ;;
+            "-d=*")
             ;;
             "all")
                 ALL="all"
@@ -118,12 +153,6 @@ cmd_parse () {
             "make")
                 MAKE="make"
             ;;
-            "elog")
-                LOG="emacs"
-            ;;
-            "vlog")
-                LOG="vi"
-            ;;
             "check")
                 CHECK="check"
             ;;
@@ -138,9 +167,6 @@ cmd_parse () {
             ;;
             "start")
                 START="start"
-            ;;
-            "kill")
-                KILL="kill"
             ;;
             "C=1")
                 SPARSE="C=1"
@@ -179,11 +205,14 @@ cmd_make () {
     if [ $LOG ]
     then
         msg "[INFO] show log, this command overrides the rest of commands."
-        if [ "$LOG" == "vi" ]
+        if [ $LOG = "vi" ]
         then
             CMD="vi $DIR/var/log/openvswitch/ovs-vswitchd.log ;"
-        else
+        elif [ $LOG = "emacs" ]
+        then
             CMD="emacs $DIR/var/log/openvswitch/ovs-vswitchd.log ;"
+        else
+            CMD="rm $DIR/var/log/openvswitch/ovs-vswitchd.log ;"
         fi
         return
     fi
@@ -248,7 +277,10 @@ cmd_make () {
 # run the command.
 cmd_run () {
     eval $CMD
-    find . -name "*.[cChH]" -print | etags -
+    if [ $OVS ]
+    then
+        find . -name "*.[cChH]" -print | etags -
+    fi
 }
 
 # run ovs.
