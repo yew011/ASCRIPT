@@ -322,7 +322,7 @@ ovs_run () {
 
         ovs-vswitchd --detach --pidfile -vconsole:off --log-file --enable-dummy
 
-        VERSION=`ovs-vsctl --version | sed -n "s/^.* \([0-9]*\.[0-9]*\.[0-9]*\)$/\1/p"`
+        VERSION=`ovs-vsctl --version | head -1 | sed -n "s/^.* \([0-9]*\.[0-9]*\.[0-9]*\)$/\1/p"`
         ovs-vsctl set O . ovs_version=$VERSION
     fi
 }
