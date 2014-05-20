@@ -193,7 +193,8 @@ cmd_make () {
         msg "[INFO] all-in-one command, make compile run ovs."
         CMD="killall ovs-vswitchd ; killall ovsdb-server ;
             make clean ; make distclean ; rmmod openvswitch ; rmmod gre ;
-            ./boot.sh ; ./configure $CONF_FLAG $CLANG
+            ./boot.sh ; ./configure $CONF_FLAG $CLANG --prefix=/usr
+            --localstatedir=/var  --sysconfdir=/etc --enable-ssl
             --with-linux=/lib/modules/`uname -r`/build ;
             make -s -j8 $SPARSE 1>/dev/null ; make install ;
             make modules_install ; /sbin/modprobe openvswitch ;
@@ -222,7 +223,8 @@ cmd_make () {
         msg "[INFO] make and install kernel module."
         CMD="killall ovs-vswitchd ; killall ovsdb-server ;
             rmmod openvswitch ; rmmod gre ;
-            ./boot.sh ; ./configure $CONF_FLAG $CLANG
+            ./boot.sh ; ./configure $CONF_FLAG $CLANG --prefix=/usr
+            --localstatedir=/var  --sysconfdir=/etc --enable-ssl
             --with-linux=/lib/modules/`uname -r`/build ;
             make -s -j8 $SPARSE 1>/dev/null ; make install ;
             make modules_install ; /sbin/modprobe openvswitch ;"
@@ -255,7 +257,8 @@ cmd_make () {
 
     if [ $CONF ]
     then
-        CMD="$CMD ./configure $CONF_FLAG $CLANG ;"
+        CMD="$CMD ./configure $CONF_FLAG $CLANG --prefix=/usr
+             --localstatedir=/var  --sysconfdir=/etc --enable-ssl;"
     fi
 
     if [ $MAKE ]
@@ -286,15 +289,15 @@ cmd_run () {
 # run ovs.
 ovs_run () {
     killall ovs-vswitchd; killall ovsdb-server;
-    rm /usr/local/etc/openvswitch/conf.db
-    mkdir -p /usr/local/etc/openvswitch
-    ovsdb-tool create /usr/local/etc/openvswitch/conf.db \
+    rm /etc/openvswitch/conf.db
+    mkdir -p /etc/openvswitch
+    ovsdb-tool create /etc/openvswitch/conf.db \
                $1/vswitchd/vswitch.ovsschema
 
     if [ $2 ]
     then
         ovsdb-server --detach --no-chdir --pidfile --log-file \
-                     --remote=punix:/usr/local/var/run/openvswitch/db.sock
+                     --remote=punix:/var/run/openvswitch/db.sock
         ovs-vswitchd --detach --no-chdir --pidfile --enable-dummy \
                      --disable-system --log-file -vvconn -vofproto_dpif
     else
@@ -308,7 +311,7 @@ ovs_run () {
         ovs-pki req+sign $NAME
         cd -
 
-        ovsdb-server --remote=punix:/usr/local/var/run/openvswitch/db.sock \
+        ovsdb-server --remote=punix:/var/run/openvswitch/db.sock \
                      --remote=db:Open_vSwitch,Open_vSwitch,manager_options \
                      --private-key=db:Open_vSwitch,SSL,private_key \
                      --certificate=db:Open_vSwitch,SSL,certificate \
