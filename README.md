@@ -8,29 +8,25 @@ The design referrs to Ethan's ovs-dev.py script.
 Alex's ovs helper SCRIPT.
 
 
-ascript [elog | vlog | kill | rmlog] [-d=DIR]
+
+ascript [elog | vlog | kill | rmlog]
 
 OPTIONS:
-
-    elog:       emacs ovs-vswitchd.log
-    vlog:       vi ovs-vswitchd.log
-    rmlog:      rm ovs-vswitchd.log
+    elog:       emacs ovs-vswitchd.log.
+    vlog:       vi ovs-vswitchd.log.
+    rmlog:      rm ovs-vswitchd.log.
+    etag:       create etags.
 
     kill:       stop ovs.
 
-[-d=DIR]
-
-    -d=DIR:     specify where to put db, log, pid files.
 
 
 ascript [DIRECTORY] [OPTIONS] [EXTRA CONFIG...]
 
 DIRECTORY:
-
     the path to ovs directory.
 
 OPTIONS:
-
     all:        rebuild everything and start ovs.
     boot:       boot.sh.
     conf:       configure.
@@ -39,27 +35,24 @@ OPTIONS:
     check:      make check -j8.
 
     rmmod:      rmmod k-module.
-    clean:      git clean -fx.
+    gclean:     git clean -dfx.
     mclean:     make clean.
+    dclean:     make distclean.
 
     start:      run ovs.
-
-EXTRA CONFIGS:
-
-    -d=DIR:     specify where to put db, log, pid files.
-    C=1:        use sparse.
-    clang:      use clang.
     debug:      start ovs in debug mode.
 
-EXAMPLES:
+EXTRA CONFIGS:
+    C=1:        use sparse.
+    clang:      use clang.
 
+EXAMPLES:
     ascript log
-    ascript /root/ASCRIPT conf make clang
-    ascript /root/ASCRIPT kernel C=1
-    ascript /root/ASCRIPT start debug
+    ascript $PWD conf make clang
+    ascript $PWD kernel C=1
+    ascript $PWD start debug
 
 NOTE:
-
     'all' will override other options.
 
-Version 1.0
+Version 1.1

@@ -8,31 +8,32 @@ CMD=
 
 # directories.
 OVS=
-DIR=
+LOG_PATH="/var/log/openvswitch/ovs-vswitchd.log"
 
-# extra configuration options.
-CONF_FLAG=
+# user specified options
 CLANG=
 SPARSE=
+START=
 DEBUG=
 
-# configuration commands
-ALL=
-BOOT=
-CONF=
-KERNEL=
-MAKE=
-LOG=
-CHECK=
-RMMOD=
-CLEAN=
-MCLEAN=
-START=
-KILL=
+# configurable commands
+BOOT="./boot.sh"
+CONF="./configure"
+CONF_FLAG="--localstatedir=/var --sysconfdir=/etc --enable-ssl \
+           --with-linux=/lib/modules/`uname -r`/build"
+MAKE="make -s -j8"
+MINSTALL="make install"
+KINSTALL="make modules_install ; /sbin/modprobe openvswitch"
+CHECK="make check"
+RMMOD="rmmod openvswitch; rmmod gre"
+GCLEAN="git clean -fdx"
+MCLEAN="make clean"
+DCLEAN="make distclean"
+KILL="killall -- ovs-vswitchd ovsdb-server"
 
 # log function.
 msg () {
-    echo "$1" 1>&2
+    echo "$@" 1>&2
 }
 
 # helper function.
@@ -42,17 +43,16 @@ helper () {
 Alex's ovs helper SCRIPT.
 
 
-ascript [elog | vlog | kill | rmlog] [-d=DIR]
+ascript [elog | vlog | kill | rmlog]
 
 OPTIONS:
-    elog:       emacs ovs-vswitchd.log
-    vlog:       vi ovs-vswitchd.log
-    rmlog:      rm ovs-vswitchd.log
+    elog:       emacs ovs-vswitchd.log.
+    vlog:       vi ovs-vswitchd.log.
+    rmlog:      rm ovs-vswitchd.log.
+    etag:       create etags.
 
     kill:       stop ovs.
 
-[-d=DIR]
-    -d=DIR:     specify where to put db, log, pid files.
 
 
 ascript [DIRECTORY] [OPTIONS] [EXTRA CONFIG...]
@@ -69,16 +69,16 @@ OPTIONS:
     check:      make check -j8.
 
     rmmod:      rmmod k-module.
-    clean:      git clean -fx.
+    gclean:     git clean -dfx.
     mclean:     make clean.
+    dclean:     make distclean.
 
     start:      run ovs.
+    debug:      start ovs in debug mode.
 
 EXTRA CONFIGS:
-    -d=DIR:     specify where to put db, log, pid files.
     C=1:        use sparse.
     clang:      use clang.
-    debug:      start ovs in debug mode.
 
 EXAMPLES:
     ascript log
@@ -89,206 +89,129 @@ EXAMPLES:
 NOTE:
     'all' will override other options.
 
-Version 1.0
+Version 1.1
 """
 }
 
 # argument parser.
 cmd_parse () {
+    local all_in_one=
+
     # print help message.
-    if [ `echo $@ | grep "\-h"` ] || [ `echo $@ | grep "\-\-help"` ]
-    then
-        helper
-        exit 0
+    if [ `echo $ARGS | grep "\-h"` ] || [ `echo $ARGS | grep "\-\-help"` ]; then
+	helper
+	exit 0
     fi
 
     # for the first command format.
     case "$@" in
-        *kill*)
-            KILL="kill"
-            return
-        ;;
-        *elog*)
-            LOG="emacs"
-            return
-        ;;
-        *vlog*)
-            LOG="vi"
-            return
-        ;;
-        *rmlog*)
-            LOG="rmlog"
-            return
-        ;;
+	*kill*)
+	    CMD="$KILL"
+	    return
+	    ;;
+	*elog*)
+	    CMD="emacs $LOG_PATH"
+	    return
+	    ;;
+	*vlog*)
+	    CMD="vi $LOG_PATH"
+	    return
+	    ;;
+	*etag*)
+	    CMD=""
+	    return
+	    ;;
+	*rmlog*)
+	    CMD="rm $LOG_PATH"
+	    return
+	    ;;
     esac
 
-    # check the ovs directory.
-    if [ ! -d "$1" ]
-    then
-        msg "[ERROR] no such file or directory $1."
-        exit 2 #ENOENT
-    fi
-    OVS=$1
-
     # for the second command format.
+    # check the ovs directory.
+    if [ ! -d "$1" ]; then
+	msg "[ERROR] no such file or directory $1."
+	exit 2 #ENOENT
+    fi
+    OVS="$1"
+
+    # parse clang/sparse option.
+    case "$@" in
+	*clang*)
+	    CLANG="CC=clang"
+	    ;;
+	*"C=1"*)
+	    SPARSE="C=1"
+	    ;;
+    esac
+
+    all_in_one="$KILL ; $MCLEAN ; $DCLEAN ; $RMMOD ; $BOOT; \
+                $CONF $CONF_FLAG $CLANG ; $MAKE $SPARSE 1>/dev/null; \
+                $MINSTALL ; $KINSTALL ;"
+
+    case "$@" in
+	*all*)
+            msg "[INFO] all-in-one command, make compile run ovs."
+            CMD="$all_in_one"
+	    START="true"
+            return
+	    ;;
+	*kernel*)
+	    msg "[INFO] make and install kernel module."
+            CMD="$all_in_one"
+	    return
+	    ;;
+    esac
+
     for option in $@
     do
-        case "$option" in
-            "$OVS")
-            ;;
-            "-d=*")
-            ;;
-            "all")
-                ALL="all"
-            ;;
-            "boot")
-                BOOT="boot"
-            ;;
-            "conf")
-                CONF="conf"
-            ;;
-            "kernel")
-                KERNEL="kernel"
-            ;;
-            "make")
-                MAKE="make"
-            ;;
-            "check")
-                CHECK="check"
-            ;;
-            "rmmod")
-                RMMOD="rmmod"
-            ;;
-            "clean")
-                CLEAN="clean"
-            ;;
-            "mclean")
-                MCLEAN="clean"
-            ;;
-            "start")
-                START="start"
-            ;;
-            "C=1")
-                SPARSE="C=1"
-            ;;
-            "clang")
-                CLANG="CC=clang"
-            ;;
-            "debug")
-                DEBUG="debug"
-            ;;
-            *) #default
-                msg "[ERROR] invalid argument $option."
-                helper
-                exit 22 #EINVAL
-            ;;
+	case "$option" in
+	    "boot")
+		CMD="$CMD $BOOT ;"
+		;;
+	    "conf")
+		CMD="$CMD $CONF $CLANG ;"
+		;;
+	    "make")
+		CMD="$CMD $MAKE $SPARSE 1>/dev/null ;"
+		;;
+	    "check")
+		CMD="$CMD $CHECK ;"
+		;;
+	    "rmmod")
+                CMD="$CMD $RMMOD ;"
+		;;
+	    "gclean")
+                CMD="$CMD $GCLEAN ;"
+		;;
+	    "mclean")
+		CMD="$CMD $MCLEAN ;"
+		;;
+	    "dclean")
+		CMD="$CMD $DCLEAN ;"
+		;;
+	    "start")
+		START="start"
+		;;
+	    "debug")
+		DEBUG="debug"
+		;;
         esac
     done
-}
-
-# compose the command to execute.
-cmd_make () {
-    if [ $ALL ]
-    then
-        msg "[INFO] all-in-one command, make compile run ovs."
-        CMD="killall ovs-vswitchd ; killall ovsdb-server ;
-            make clean ; make distclean ; rmmod openvswitch ; rmmod gre ;
-            ./boot.sh ; ./configure $CONF_FLAG $CLANG --prefix=/usr
-            --localstatedir=/var  --sysconfdir=/etc --enable-ssl
-            --with-linux=/lib/modules/`uname -r`/build ;
-            make -s -j8 $SPARSE 1>/dev/null ; make install ;
-            make modules_install ; /sbin/modprobe openvswitch ;
-            ovs_run $OVS $DEBUG ;"
-        return
-    fi
-
-    # open the vswitchd log.
-    if [ $LOG ]
-    then
-        msg "[INFO] show log, this command overrides the rest of commands."
-        if [ $LOG = "vi" ]
-        then
-            CMD="vi $DIR/var/log/openvswitch/ovs-vswitchd.log ;"
-        elif [ $LOG = "emacs" ]
-        then
-            CMD="emacs $DIR/var/log/openvswitch/ovs-vswitchd.log ;"
-        else
-            CMD="rm $DIR/var/log/openvswitch/ovs-vswitchd.log ;"
-        fi
-        return
-    fi
-
-    if [ $KERNEL ]
-    then
-        msg "[INFO] make and install kernel module."
-        CMD="killall ovs-vswitchd ; killall ovsdb-server ;
-            rmmod openvswitch ; rmmod gre ;
-            ./boot.sh ; ./configure $CONF_FLAG $CLANG --prefix=/usr
-            --localstatedir=/var  --sysconfdir=/etc --enable-ssl
-            --with-linux=/lib/modules/`uname -r`/build ;
-            make -s -j8 $SPARSE 1>/dev/null ; make install ;
-            make modules_install ; /sbin/modprobe openvswitch ;"
-    fi
-
-    if [ $RMMOD ] && [ ! $KERNEL ]
-    then
-        CMD="$CMD rmmod openvswitch ; rmmod gre ;"
-    fi
-
-    if [ $CLEAN ]
-    then
-        CMD="$CMD git clean -fx ;"
-    fi
-
-    if [ $MCLEAN ]
-    then
-        CMD="$CMD make clean ;"
-    fi
-
-    if [ $KILL ]
-    then
-        CMD="$CMD killall ovs-vswitchd ; killall ovsdb-server ;"
-    fi
-
-    if [ $BOOT ]
-    then
-        CMD="$CMD ./boot.sh ;"
-    fi
-
-    if [ $CONF ]
-    then
-        CMD="$CMD ./configure $CONF_FLAG $CLANG --prefix=/usr
-             --localstatedir=/var  --sysconfdir=/etc --enable-ssl;"
-    fi
-
-    if [ $MAKE ]
-    then
-        CMD="$CMD make -s -j8 $SPARSE 1>/dev/null ; make install ;"
-    fi
-
-    if [ $START ]
-    then
-        CMD="$CMD ovs_run $OVS $DEBUG ;"
-    fi
-
-    if [ $CHECK ]
-    then
-        CMD="$CMD make check TESTSUITEFLAGS=-j8 ;"
-    fi
 }
 
 # run the command.
 cmd_run () {
     eval $CMD
-    if [ $OVS ]
-    then
-        find . -name "*.[cChH]" -print | etags -
+    find . -name "*.[cChH]" -print | etags -
+    if [ "$START" ]; then
+	ovs_run "$OVS" "$DEBUG"
     fi
 }
 
 # run ovs.
 ovs_run () {
-    killall ovs-vswitchd; killall ovsdb-server;
+    $KILL
     rm /etc/openvswitch/conf.db
     mkdir -p /etc/openvswitch
     ovsdb-tool create /etc/openvswitch/conf.db \
@@ -337,23 +260,10 @@ ovs_run () {
 
 ############ THE 'MAIN' ##################
 
-# check the options.
+# check and parse the options.
 cmd_parse $@
 
 cd $OVS
-# user can specify the run directory.
-DIR=`echo $@ | sed -n "s/.*-d=\(.*\)[ ]*.*/\1/p"`
-
-if [ $DIR ]
-then
-    CONF_FLAG="--prefix=$DIR, --localstatedir=$DIR, --with-logdir=$DIR/log," \
-              "--with-rundir=$DIR/run --with-dbdir=$DIR"
-else
-    DIR="/usr/local"
-fi
-
-# complete command.
-cmd_make $@
 
 # run command.
 cmd_run
