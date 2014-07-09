@@ -16,7 +16,6 @@ OPTIONS:
     vlog:       vi ovs-vswitchd.log.
     rmlog:      rm ovs-vswitchd.log.
     etag:       create etags.
-
     kill:       stop ovs.
 
 
@@ -33,12 +32,10 @@ OPTIONS:
     kernel:     install kernel module.
     make:       make and make install.
     check:      make check -j8.
-
     rmmod:      rmmod k-module.
     gclean:     git clean -dfx.
     mclean:     make clean.
     dclean:     make distclean.
-
     start:      run ovs.
     debug:      start ovs in debug mode.
 
