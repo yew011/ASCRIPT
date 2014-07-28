@@ -24,7 +24,7 @@ CONF_FLAG="--localstatedir=/var --sysconfdir=/etc --enable-ssl \
 MAKE="make -s -j8"
 MINSTALL="make install"
 KINSTALL="make modules_install ; /sbin/modprobe openvswitch"
-CHECK="make check"
+CHECK="make check TESTSUITEFLAGS=-j8"
 RMMOD="rmmod openvswitch; rmmod gre"
 GCLEAN="git clean -fdx"
 MCLEAN="make clean"
@@ -51,6 +51,7 @@ OPTIONS:
     rmlog:      rm ovs-vswitchd.log.
     etag:       create etags.
 
+    rmmod:      remove the kernel modules.
     kill:       stop ovs.
 
 
@@ -68,7 +69,9 @@ OPTIONS:
     make:       make and make install.
     check:      make check -j8.
 
-    rmmod:      rmmod k-module.
+    minst:      make install.
+    kinst:      install kernal modules.
+
     gclean:     git clean -dfx.
     mclean:     make clean.
     dclean:     make distclean.
@@ -125,6 +128,11 @@ cmd_parse () {
 	    CMD="rm $LOG_PATH"
 	    return
 	    ;;
+	*rmmod*)
+	    CMD="$RMMOD"
+	    return
+	    ;;
+
     esac
 
     # for the second command format.
@@ -170,16 +178,13 @@ cmd_parse () {
 		CMD="$CMD $BOOT ;"
 		;;
 	    "conf")
-		CMD="$CMD $CONF $CLANG ;"
+		CMD="$CMD $CONF $CONF_FLAG $CLANG ;"
 		;;
 	    "make")
 		CMD="$CMD $MAKE $SPARSE 1>/dev/null ;"
 		;;
 	    "check")
 		CMD="$CMD $CHECK ;"
-		;;
-	    "rmmod")
-                CMD="$CMD $RMMOD ;"
 		;;
 	    "gclean")
                 CMD="$CMD $GCLEAN ;"
@@ -189,6 +194,12 @@ cmd_parse () {
 		;;
 	    "dclean")
 		CMD="$CMD $DCLEAN ;"
+		;;
+	    "minst")
+		CMD="$CMD $MINSTALL ;"
+		;;
+	    "kinst")
+		CMD="$CMD $KINSTALL ;"
 		;;
 	    "start")
 		START="start"
@@ -202,8 +213,8 @@ cmd_parse () {
 
 # run the command.
 cmd_run () {
-    eval $CMD
-    find . -name "*.[cChH]" -print | etags -
+    eval "$CMD";
+    find . -name "*.[cChH]" -print | etags -;
     if [ "$START" ]; then
 	ovs_run "$OVS" "$DEBUG"
     fi
