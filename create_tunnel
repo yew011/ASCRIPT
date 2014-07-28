@@ -1,0 +1,86 @@
+#!/bin/sh
+
+msg () {
+    echo "$@" 1>&2
+}
+
+helper () {
+    msg \
+"""
+Alex's script for ovs tunnel configuration.
+
+create_tunnel [-n=number of tunnels] [-t=type of tunnels] [-lip=logcal ip]
+              [-I=egress interface] [-rip=remote ip] [-cfm|bfd]
+              [-mid=beginning of cfm|bfd id range] [-mint=monitor interval]
+"""
+}
+
+ARGS="$@"
+
+TNL_N=1
+TNL_TYPE=gre
+TNL_MID=0
+TNL_MINT=300
+TNL_LIP=
+TNL_RIP=
+TNL_IFACE=
+TNL_MONITOR=
+
+# argument parsing.
+
+for option in $ARGS; do
+    case "$option" in
+	-n=*)
+	TNL_N=$(echo $option | cut -d "=" -f2)
+	;;
+	-t=*)
+    	TNL_TYPE=$(echo $option | cut -d "=" -f2)
+	;;
+	-lip*)
+    	TNL_LIP=$(echo $option | cut -d "=" -f2)
+	;;
+	-I=*)
+    	TNL_IFACE=$(echo $option | cut -d "=" -f2)
+	;;
+	-rip=*)
+    	TNL_RIP=$(echo $option | cut -d "=" -f2)
+	;;
+	-cfm)
+        TNL_MONITOR=$(echo $option | cut -d "-" -f2)
+	;;
+	-bfd)
+    	TNL_MONITOR=$(echo $option | cut -d "-" -f2)
+	;;
+	-mid=*)
+    	TNL_MID=$(echo $option | cut -d "=" -f2)
+	;;
+	-mint=*)
+    	TNL_INT=$(echo $option | cut -d "=" -f2)
+	;;
+	*)
+        helper
+	exit 0;
+	;;
+    esac
+done
+
+ovs-vsctl add-br br-int
+ovs-ofctl add-flow br-int "icmp6 actions=drop"
+
+if [ -n "$TNL_IFACE" ] && [ -n "TNL_LIP" ] ; then
+    ifconfig $TNL_IFACE $TNL_LIP up
+fi
+
+# add ports,
+ovs-vsctl `for i in \`seq 1 $TNL_N\`; do echo "-- add-port br-int p$i"; done`
+
+# set tunnels.
+ovs-vsctl `for i in \`seq 1 $TNL_N\`; do echo " -- set Interface p$i type=$TNL_TYPE options:remote_ip=$TNL_RIP options:key=$i"; done`
+
+# set tunnel monitors.
+if [ "$TNL_MONITOR" = "bfd" ] ; then
+    echo here
+    ovs-vsctl `for i in \`seq 1 $TNL_N\`; do echo " -- set Interface p$i bfd:enable=true bfd:min_tx=$TNL_MINT bfd:min_rx=$TNL_MINT"; done`
+elif [ "$TNL_MONITOR" = "cfm" ]; then
+    ovs-vsctl `for i in \`seq 1 $TNL_N\`; do echo " -- set Interface p$i cfm_mpid=$(expr $i + $TNL_MID) other_config:cfm_interval=$TNL_MINT other_config:cfm_extended=true "; done`
+fi
