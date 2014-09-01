@@ -7,7 +7,7 @@ ARGS=$@
 CMD=
 
 # directories.
-OVS=
+OVS=.
 LOG_PATH="/var/log/openvswitch/ovs-vswitchd.log"
 
 # user specified options
@@ -232,7 +232,7 @@ ovs_run () {
     then
         ovsdb-server --detach --no-chdir --pidfile --log-file \
                      --remote=punix:/var/run/openvswitch/db.sock
-        ovs-vswitchd --detach --no-chdir --pidfile --enable-dummy \
+        ovs-vswitchd --detach --no-chdir --pidfile \
                      --disable-system --log-file -vvconn -vofproto_dpif
     else
         NAME=ovsclient
@@ -250,7 +250,7 @@ ovs_run () {
                      --private-key=db:Open_vSwitch,SSL,private_key \
                      --certificate=db:Open_vSwitch,SSL,certificate \
                      --bootstrap-ca-cert=db:Open_vSwitch,SSL,ca_cert \
-                     --detach --pidfile -vconsole:off --log-file --enable-dummy
+                     --detach --pidfile -vconsole:off --log-file
 
         ovs-vsctl --no-wait --bootstrap set-ssl $CERT_PFX/ovsclient-privkey.pem \
                                                 $CERT_PFX/ovsclient-cert.pem \
