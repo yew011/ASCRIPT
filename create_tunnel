@@ -55,7 +55,7 @@ for option in $ARGS; do
     	TNL_MID=$(echo $option | cut -d "=" -f2)
 	;;
 	-mint=*)
-    	TNL_INT=$(echo $option | cut -d "=" -f2)
+    	TNL_MINT=$(echo $option | cut -d "=" -f2)
 	;;
 	*)
         helper
