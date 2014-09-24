@@ -17,7 +17,7 @@ create_tunnel [-n=number of tunnels] [-t=type of tunnels] [-lip=logcal ip]
 
 ARGS="$@"
 
-BR_SECURE
+BR_SECURE=
 
 TNL_N=1
 TNL_TYPE=gre
@@ -71,7 +71,7 @@ done
 
 ovs-vsctl add-br br-int
 if [ -n "$BR_SECURE" ] ; then
-    ovs-vsctl set-br br-int fail-mode=secure
+    ovs-vsctl set br br-int fail-mode=secure
 fi
 
 ovs-ofctl add-flow br-int "icmp6 actions=drop"
