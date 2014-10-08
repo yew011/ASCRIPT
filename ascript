@@ -17,14 +17,15 @@ START=
 DEBUG=
 
 # configurable commands
+MULT="-j8"
 BOOT="./boot.sh"
 CONF="./configure"
 CONF_FLAG="--localstatedir=/var --sysconfdir=/etc --enable-ssl \
            --with-linux=/lib/modules/`uname -r`/build"
-MAKE="make -s -j8"
+MAKE="make -s"
 MINSTALL="make install"
 KINSTALL="make modules_install ; /sbin/modprobe openvswitch"
-CHECK="make check TESTSUITEFLAGS=-j8"
+CHECK="make check TESTSUITEFLAGS="
 RMMOD="rmmod openvswitch; rmmod gre"
 GCLEAN="git clean -fdx"
 MCLEAN="make clean"
@@ -82,6 +83,7 @@ OPTIONS:
 EXTRA CONFIGS:
     C=1:        use sparse.
     clang:      use clang.
+    -j:         multiprocessing, default -j8.
 
 EXAMPLES:
     ascript log
@@ -154,7 +156,7 @@ cmd_parse () {
     esac
 
     all_in_one="$KILL ; $MCLEAN ; $DCLEAN ; $RMMOD ; $BOOT; \
-                $CONF $CONF_FLAG $CLANG ; $MAKE $SPARSE 1>/dev/null; \
+                $CONF $CONF_FLAG $CLANG ; $MAKE $MULT $SPARSE 1>/dev/null; \
                 $MINSTALL ; $KINSTALL ;"
 
     case "$@" in
@@ -169,6 +171,9 @@ cmd_parse () {
             CMD="$all_in_one"
 	    return
 	    ;;
+        *-j*)
+            MULT="$(echo "$@" | tr ' ' '\n' | grep -- "-j")"
+            ;;
     esac
 
     for option in $@
@@ -181,10 +186,10 @@ cmd_parse () {
 		CMD="$CMD $CONF $CONF_FLAG $CLANG ;"
 		;;
 	    "make")
-		CMD="$CMD $MAKE $SPARSE 1>/dev/null ;"
+		CMD="$CMD $MAKE $MULT $SPARSE 1>/dev/null ;"
 		;;
 	    "check")
-		CMD="$CMD $CHECK ;"
+		CMD="$CMD $CHECK$MULT;"
 		;;
 	    "gclean")
                 CMD="$CMD $GCLEAN ;"
