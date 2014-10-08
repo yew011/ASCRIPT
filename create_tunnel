@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/sh -eu
 
 msg () {
     echo "$@" 1>&2
@@ -69,7 +69,7 @@ for option in $ARGS; do
     esac
 done
 
-ovs-vsctl add-br br-int
+ovs-vsctl add-br br-int || echo skip
 if [ -n "$BR_SECURE" ] ; then
     ovs-vsctl set br br-int fail-mode=secure
 fi
@@ -88,7 +88,6 @@ ovs-vsctl `for i in \`seq 1 $TNL_N\`; do echo " -- set Interface p$i type=$TNL_T
 
 # set tunnel monitors.
 if [ "$TNL_MONITOR" = "bfd" ] ; then
-    echo here
     ovs-vsctl `for i in \`seq 1 $TNL_N\`; do echo " -- set Interface p$i bfd:enable=true bfd:min_tx=$TNL_MINT bfd:min_rx=$TNL_MINT"; done`
 elif [ "$TNL_MONITOR" = "cfm" ]; then
     ovs-vsctl `for i in \`seq 1 $TNL_N\`; do echo " -- set Interface p$i cfm_mpid=$(expr $i + $TNL_MID) other_config:cfm_interval=$TNL_MINT other_config:cfm_extended=true "; done`
