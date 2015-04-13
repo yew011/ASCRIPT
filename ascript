@@ -12,6 +12,7 @@ LOG_PATH="/var/log/openvswitch/ovs-vswitchd.log"
 
 # user specified options
 CLANG=
+SAVE_DB=
 SPARSE=
 START=
 DEBUG=
@@ -84,6 +85,7 @@ EXTRA CONFIGS:
     C=1:        use sparse.
     clang:      use clang.
     -j:         multiprocessing, default -j8.
+    save_db:    save the current conf.db during restart.
 
 EXAMPLES:
     ascript log
@@ -147,6 +149,9 @@ cmd_parse () {
 
     # parse clang/sparse option.
     case "$@" in
+        *save_db*)
+            SAVE_DB="save_db"
+            ;;
 	*clang*)
 	    CLANG="CC=clang"
 	    ;;
@@ -228,13 +233,14 @@ cmd_run () {
 # run ovs.
 ovs_run () {
     $KILL
-    rm /etc/openvswitch/conf.db
-    mkdir -p /etc/openvswitch
-    ovsdb-tool create /etc/openvswitch/conf.db \
-               $1/vswitchd/vswitch.ovsschema
+    if [ -z $SAVE_DB ]; then
+        rm /etc/openvswitch/conf.db
+        mkdir -p /etc/openvswitch
+        ovsdb-tool create /etc/openvswitch/conf.db \
+            $1/vswitchd/vswitch.ovsschema
+    fi
 
-    if [ $2 ]
-    then
+    if [ $2 ]; then
         ovsdb-server --detach --no-chdir --pidfile --log-file \
                      --remote=punix:/var/run/openvswitch/db.sock
         ovs-vswitchd --detach --no-chdir --pidfile \
