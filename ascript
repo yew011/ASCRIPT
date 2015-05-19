@@ -16,6 +16,7 @@ SAVE_DB=
 SPARSE=
 START=
 DEBUG=
+OVN=
 
 # configurable commands
 MULT="-j8"
@@ -86,6 +87,7 @@ EXTRA CONFIGS:
     clang:      use clang.
     -j:         multiprocessing, default -j8.
     save_db:    save the current conf.db during restart.
+    ovn:        start ovn-nb/ovn-sb/vtep.
 
 EXAMPLES:
     ascript log
@@ -216,6 +218,9 @@ cmd_parse () {
 		;;
 	    "debug")
 		DEBUG="debug"
+                ;;
+	    "ovn")
+		OVN="ovn"
 		;;
         esac
     done
@@ -226,7 +231,11 @@ cmd_run () {
     eval "$CMD";
     find . -name "*.[cChH]" -print | etags -;
     if [ "$START" ]; then
-	ovs_run "$OVS" "$DEBUG"
+        if [ "${OVN}" ]; then
+            ovn_run "$OVS"
+        else
+	    ovs_run "$OVS"
+        fi
     fi
 }
 
@@ -240,7 +249,7 @@ ovs_run () {
             $1/vswitchd/vswitch.ovsschema
     fi
 
-    if [ $2 ]; then
+    if [ -n "${DEBUG}" ]; then
         ovsdb-server --detach --no-chdir --pidfile --log-file \
                      --remote=punix:/var/run/openvswitch/db.sock
         ovs-vswitchd --detach --no-chdir --pidfile \
@@ -275,9 +284,24 @@ ovs_run () {
     fi
 }
 
+# run ovn.
+ovn_run () {
+    $KILL
 
+    rm -f /etc/openvswitch/*
 
+    for daemon in ovn-nb ovn-sb vtep; do
+        ovsdb-tool create /etc/openvswitch/${daemon}.db ${1}/${daemon%%-*}/${daemon}.ovsschema
+    done
 
+    ovsdb-server --pidfile --detach --log-file --remote \
+        punix:/var/run/openvswitch/db.sock --remote=db:hardware_vtep,Global,managers \
+        /etc/openvswitch/vtep.db /etc/openvswitch/ovn-nb.db /etc/openvswitch/ovn-sb.db
+
+    vtep-ctl add-ps br0
+    vtep-ctl set Physical_Switch br0 tunnel_ips=1.2.3.4
+    vtep-ctl add-port br0 pp0
+}
 
 
 ############ THE 'MAIN' ##################
